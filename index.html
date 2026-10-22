@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>У меня для тебя кое-что есть 💌</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Manrope:wght@500;700&display=swap" rel="stylesheet">
+<script>
+/* ============================================================
+   НАСТРОЙКИ — меняйте только этот блок
+   ============================================================ */
+const CONFIG = {
+  // --- Telegram ---
+  // 1) Создайте бота у @BotFather и вставьте его токен
+  TG_TOKEN:   "ВСТАВЬТЕ_ТОКЕН_БОТА",
+  // 2) Напишите своему боту /start, затем узнайте свой числовой chat_id (см. инструкцию)
+  TG_CHAT_ID: "ВСТАВЬТЕ_CHAT_ID",
+
+  // Имя той, кого приглашаете — будет в уведомлениях и в тексте
+  name: "Даша_АЛО)",
+
+  // --- Вступление (жест «подержи сердечко») ---
+  introTitle: "Всё начинается с тепла",
+  introHint:  "Коснись сердечка и подержи",
+
+  // --- Экран 1 ---
+  question: "{name}, пойдёшь со мной на свидание? 💌",
+  yesText:  "Да! 😍",
+  noText:   "Неа",
+
+  // --- Экран 2 ---
+  confirmTitle:  "Подожди, ты действительно сказала «да»? 😍",
+  confirmSub:    "Дааа я твоя мразота, дааа я твоя скотина 😅",
+  confirmButton: "Да, да, ДА!",
+
+  // --- Экран 3 ---
+  dateTitle:  "Когда тебе удобно? 📅",
+  dateButton: "Подтвердить 💫",
+
+  // --- Экран 4 ---
+  activityTitle: "Чем займёмся? 😋",
+  activitySub:   "Выбирай, что по душе",
+  activities: [
+    { emoji: "🍕", label: "Пицца" },
+    { emoji: "🎬", label: "Кино дома" },
+    { emoji: "🌳", label: "Прогулка" },
+    { emoji: "☕", label: "Кофе" }
+  ],
+
+  // --- Финал. {date}, {time}, {activity} подставятся сами ---
+  finalTitle: "Ура! Это свидание 💛",
+  finalText:  "Жду тебя {date} в {time}. Нас ждёт {activity} 💫",
+
+  // Секретный конверт на финале (оставьте "" чтобы убрать)
+  secret: "P.S. Ты не бойся ночииии ведь я ряяядооом)))…",
+
+  // Кнопки на финале
+  me: "Курбану",                       // кому отправляется ответ (в дательном падеже)
+  contactLink: "https://t.me/sahatmuradov",
+  contactText: "Написать Курбану 💬",
+  calendarTitle: "Свидание 💛",
+
+  // Фотоальбом «наши моменты»: ссылки на фото + подписи (можно оставить пустым [])
+  photos: [
+    // { src: "https://example.com/photo1.jpg", caption: "Наш первый вечер" }
+  ],
+
+  // Картинки экранов (анимированные эмодзи Noto, CC BY 4.0). Можно вставить свою ссылку на фото/GIF.
+  img: {
+    intro:    "https://fonts.gstatic.com/s/e/notoemoji/latest/1f48c/512.gif",
+    question: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f970/512.gif",
+    confirm:  "https://fonts.gstatic.com/s/e/notoemoji/latest/1f60d/512.gif",
+    date:     "https://fonts.gstatic.com/s/e/notoemoji/latest/1f914/512.gif",
+    activity: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f60b/512.gif",
+    final:    "https://fonts.gstatic.com/s/e/notoemoji/latest/1f973/512.gif"
+  }
+};
+</script>
+<style>
+  :root {
+    --bg1: #ff6a6a;
+    --bg2: #ff9a5a;
+    --ink: #ffffff;
+    --ink-soft: rgba(255,255,255,.86);
+    --glass: rgba(255,255,255,.18);
+    --glass-line: rgba(255,255,255,.38);
+    --btn: #ffffff;
+    --btn-ink: #e8476a;
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg1: #c9405a;
+      --bg2: #d9703f;
+      --btn-ink: #c9405a;
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: linear-gradient(165deg, var(--bg1), var(--bg2));
+    background-color: var(--bg1);
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1 {
+    font-family: "Unbounded", "Arial Black", system-ui, sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.5rem, 6.4vw, 2.2rem);
+    line-height: 1.15;
+    margin: 0 0 .6rem;
+    text-wrap: balance;
+  }
+  p { margin: 0; color: var(--ink-soft); line-height: 1.5; }
+
+  /* Падающие лепестки */
+  #petals { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+  .petal {
+    position: absolute; top: -40px; font-size: 20px; opacity: .75;
+    animation: fall linear forwards;
+  }
+  @keyframes fall {
+    to { transform: translate(var(--dx), 110vh) rotate(var(--rot)); }
+  }
+
+  /* Экраны */
+  .screen {
+    position: fixed; inset: 0; z-index: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px 22px; text-align: center;
+    padding-top: calc(24px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    opacity: 0; visibility: hidden; transform: scale(.97);
+    transition: opacity .45s ease, transform .45s ease, visibility .45s;
+    overflow-y: auto;
+  }
+  .screen.active { opacity: 1; visibility: visible; transform: none; }
+  .inner { width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; }
+  .pic { width: 140px; height: 140px; object-fit: contain; margin-bottom: 18px; }
+  .pic-fallback { font-size: 110px; line-height: 140px; margin-bottom: 18px; }
+
+  .btn {
+    font: 700 1.05rem "Manrope", system-ui, sans-serif;
+    background: var(--btn); color: var(--btn-ink);
+    border: 0; border-radius: 999px; padding: 15px 30px; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(120,20,40,.22);
+    transition: transform .15s ease;
+  }
+  .btn:active { transform: scale(.95); }
+  .btn:focus-visible, .act:focus-visible, .field:focus-within, .envelope:focus-visible, .heart-btn:focus-visible {
+    outline: 3px solid #fff; outline-offset: 3px;
+  }
+  .btn.ghost {
+    background: var(--glass); color: #fff; box-shadow: none;
+    border: 1px solid var(--glass-line);
+  }
+
+  /* Вступление: удержание сердца */
+  .heart-btn {
+    position: relative; width: 150px; height: 150px; margin: 26px 0 18px;
+    border: 0; background: none; cursor: pointer; touch-action: none;
+    -webkit-user-select: none; user-select: none;
+  }
+  .heart-btn svg.ring { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .heart-btn .ring circle { fill: none; stroke-width: 6; }
+  .heart-btn .track { stroke: rgba(255,255,255,.25); }
+  .heart-btn .prog { stroke: #fff; stroke-linecap: round; stroke-dasharray: 440; stroke-dashoffset: 440; }
+  .heart-btn .h {
+    position: absolute; inset: 0; display: grid; place-items: center; font-size: 68px;
+    transition: transform .2s ease;
+  }
+  .heart-btn.holding .h { animation: beat .6s ease-in-out infinite; }
+  @keyframes beat { 50% { transform: scale(1.14); } }
+
+  /* Экран 1: кнопки */
+  .answers { position: relative; width: 100%; height: 170px; margin-top: 26px; }
+  #yesBtn { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); }
+  #noBtn { position: fixed; z-index: 5; transition: left .25s ease, top .25s ease; }
+
+  /* Экран 3: дата и время */
+  .fields { width: 100%; display: grid; gap: 12px; margin: 22px 0 18px; }
+  .field {
+    display: flex; align-items: center; gap: 12px; text-align: left;
+    background: var(--glass); border: 1px solid var(--glass-line);
+    border-radius: 16px; padding: 4px 16px;
+  }
+  .field span { font-size: 20px; }
+  .field input {
+    flex: 1; min-width: 0; font: 700 1.05rem "Manrope", system-ui, sans-serif;
+    color: #fff; background: transparent; border: 0; padding: 14px 0; outline: none;
+    color-scheme: dark;
+  }
+  .err { min-height: 1.4em; font-size: .9rem; color: #fff; font-weight: 700; margin-bottom: 8px; }
+
+  /* Экран 4: активности */
+  .acts { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; }
+  .act {
+    background: var(--glass); border: 1px solid var(--glass-line); border-radius: 18px;
+    color: #fff; padding: 18px 8px; cursor: pointer;
+    font: 700 1rem "Manrope", system-ui, sans-serif;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    transition: transform .15s ease, background .15s ease;
+  }
+  .act b { font-size: 40px; line-height: 1; font-weight: 400; }
+  .act:active, .act.picked { transform: scale(.96); background: rgba(255,255,255,.34); }
+
+  /* Финал */
+  .envelope {
+    margin-top: 24px; background: var(--glass); border: 1px dashed var(--glass-line);
+    border-radius: 18px; padding: 16px 20px; color: #fff; cursor: pointer;
+    font: 700 1rem "Manrope", system-ui, sans-serif; width: 100%;
+  }
+  .secret-text {
+    margin-top: 12px; font-size: 1.05rem; color: #fff; line-height: 1.55;
+    background: rgba(255,255,255,.14); border-radius: 16px; padding: 16px; width: 100%;
+    display: none; text-align: left;
+  }
+  .album {
+    width: 100%; margin-top: 22px; display: flex; gap: 12px; overflow-x: auto;
+    scroll-snap-type: x mandatory; padding-bottom: 6px;
+  }
+  .album figure { flex: 0 0 78%; margin: 0; scroll-snap-align: center; }
+  .album img { width: 100%; aspect-ratio: 4/5; object-fit: cover; border-radius: 18px; display: block; }
+  .album figcaption { font-size: .9rem; margin-top: 6px; color: var(--ink-soft); }
+
+  .final-actions { width: 100%; display: grid; gap: 10px; margin-top: 18px; }
+  .final-actions .btn { width: 100%; text-decoration: none; display: block; }
+  .btn.send { font-size: 1.15rem; padding: 18px 30px; margin-top: 6px; }
+  .btn.send:disabled { opacity: .7; cursor: default; }
+  .status {
+    margin-top: 0; font-size: .95rem; font-weight: 700; color: #fff;
+    background: rgba(255,255,255,.14); border-radius: 999px; padding: 8px 16px;
+  }
+  .status button {
+    font: inherit; color: inherit; background: none; border: 0; text-decoration: underline; cursor: pointer;
+  }
+  #s5 { justify-content: flex-start; }
+  #s5 .inner { margin: auto 0; padding: 20px 0; }
+
+  /* Взрыв сердец */
+  .burst {
+    position: fixed; z-index: 10; pointer-events: none; font-size: 26px;
+    animation: burst 1.2s ease-out forwards;
+  }
+  @keyframes burst {
+    to { transform: translate(var(--bx), var(--by)) scale(.4); opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .petal, .burst { display: none; }
+    .screen { transition: opacity .2s; transform: none; }
+    .heart-btn.holding .h { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="petals" aria-hidden="true"></div>
+
+<!-- Вступление -->
+<section class="screen active" id="s0">
+  <div class="inner">
+    <h1 id="introTitle"></h1>
+    <button class="heart-btn" id="heartBtn" aria-label="Подержать сердечко">
+      <svg class="ring" viewBox="0 0 150 150" aria-hidden="true">
+        <circle class="track" cx="75" cy="75" r="70"/>
+        <circle class="prog" id="prog" cx="75" cy="75" r="70"/>
+      </svg>
+      <span class="h">❤️</span>
+    </button>
+    <p id="introHint"></p>
+  </div>
+</section>
+
+<!-- Экран 1: вопрос -->
+<section class="screen" id="s1">
+  <div class="inner">
+    <div data-img="question"></div>
+    <h1 id="question"></h1>
+    <div class="answers">
+      <button class="btn" id="yesBtn"></button>
+    </div>
+  </div>
+</section>
+<button class="btn ghost" id="noBtn" hidden></button>
+
+<!-- Экран 2: подтверждение -->
+<section class="screen" id="s2">
+  <div class="inner">
+    <div data-img="confirm"></div>
+    <h1 id="confirmTitle"></h1>
+    <p id="confirmSub" style="margin-bottom:22px"></p>
+    <button class="btn" id="confirmBtn"></button>
+  </div>
+</section>
+
+<!-- Экран 3: дата и время -->
+<section class="screen" id="s3">
+  <div class="inner">
+    <div data-img="date"></div>
+    <h1 id="dateTitle"></h1>
+    <div class="fields">
+      <label class="field"><span aria-hidden="true">📅</span><input type="date" id="dateIn" aria-label="Дата"></label>
+      <label class="field"><span aria-hidden="true">🕖</span><input type="time" id="timeIn" aria-label="Время"></label>
+    </div>
+    <div class="err" id="dateErr" role="alert"></div>
+    <button class="btn" id="dateBtn"></button>
+  </div>
+</section>
+
+<!-- Экран 4: активность -->
+<section class="screen" id="s4">
+  <div class="inner">
+    <div data-img="activity"></div>
+    <h1 id="activityTitle"></h1>
+    <p id="activitySub"></p>
+    <div class="acts" id="acts"></div>
+  </div>
+</section>
+
+<!-- Финал -->
+<section class="screen" id="s5">
+  <div class="inner">
+    <div data-img="final"></div>
+    <h1 id="finalTitle"></h1>
+    <p id="finalText"></p>
+    <div class="album" id="album" hidden></div>
+    <button class="envelope" id="envelope" hidden>💌 Для тебя спрятан конверт — открой</button>
+    <div class="secret-text" id="secretText"></div>
+    <div class="final-actions">
+      <button class="btn send" id="sendBtn"></button>
+      <div class="status" id="status" role="status" hidden></div>
+      <button class="btn ghost" id="calBtn">Добавить в календарь 📅</button>
+      <a class="btn ghost" id="contactBtn" target="_blank" rel="noopener"></a>
+      <button class="btn ghost" id="restartBtn">Пройти заново</button>
+    </div>
+  </div>
+</section>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const st = { noAttempts: 0, date: "", time: "", dateHuman: "", activity: "" };
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const fill = s => s.replaceAll("{name}", CONFIG.name);
+
+  /* ---------- Telegram ---------- */
+  const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  function tg(text) {
+    if (!CONFIG.TG_TOKEN || CONFIG.TG_TOKEN.startsWith("ВСТАВЬТЕ")) {
+      console.warn("Telegram не настроен:", text); return Promise.resolve(false);
+    }
+    const url = `https://api.telegram.org/bot${CONFIG.TG_TOKEN}/sendMessage`;
+    const body = new URLSearchParams({ chat_id: CONFIG.TG_CHAT_ID, text, parse_mode: "HTML" });
+    return fetch(url, { method: "POST", body, keepalive: true })
+      .then(r => r.json()).then(j => !!j.ok)
+      .catch(() => { try { return navigator.sendBeacon(url, body); } catch (e) { return false; } });
+  }
+  const stamp = () => new Date().toLocaleString("ru-RU", { day:"numeric", month:"long", hour:"2-digit", minute:"2-digit" });
+  const device = () => {
+    const ua = navigator.userAgent;
+    if (/iPhone/.test(ua)) return "iPhone";
+    if (/iPad/.test(ua)) return "iPad";
+    if (/Android/.test(ua)) return "Android";
+    if (/Mac/.test(ua)) return "Mac";
+    if (/Windows/.test(ua)) return "Windows";
+    return "другое устройство";
+  };
+
+  /* ---------- Тексты ---------- */
+  $("introTitle").textContent = CONFIG.introTitle;
+  $("introHint").textContent = CONFIG.introHint;
+  $("question").textContent = fill(CONFIG.question);
+  $("yesBtn").textContent = CONFIG.yesText;
+  $("noBtn").textContent = CONFIG.noText;
+  $("confirmTitle").textContent = CONFIG.confirmTitle;
+  $("confirmSub").textContent = CONFIG.confirmSub;
+  $("confirmBtn").textContent = CONFIG.confirmButton;
+  $("dateTitle").textContent = CONFIG.dateTitle;
+  $("dateBtn").textContent = CONFIG.dateButton;
+  $("activityTitle").textContent = CONFIG.activityTitle;
+  $("activitySub").textContent = CONFIG.activitySub;
+  $("finalTitle").textContent = CONFIG.finalTitle;
+
+  // Картинки с запасным эмодзи
+  const fallbacks = { question:"🥰", confirm:"😍", date:"🤔", activity:"😋", final:"🥳" };
+  document.querySelectorAll("[data-img]").forEach(box => {
+    const key = box.dataset.img, src = CONFIG.img[key];
+    if (!src) return;
+    const img = new Image();
+    img.className = "pic"; img.alt = ""; img.src = src;
+    img.onerror = () => { box.innerHTML = `<div class="pic-fallback" aria-hidden="true">${fallbacks[key]}</div>`; };
+    box.replaceWith(img);
+  });
+
+  /* ---------- Лепестки ---------- */
+  if (!reduce) {
+    const set = ["🌸","💮","🌷","💗","✨"];
+    setInterval(() => {
+      const p = document.createElement("span");
+      p.className = "petal";
+      p.textContent = set[Math.floor(Math.random()*set.length)];
+      p.style.left = Math.random()*100 + "vw";
+      p.style.fontSize = 14 + Math.random()*16 + "px";
+      p.style.setProperty("--dx", (Math.random()*160-80) + "px");
+      p.style.setProperty("--rot", (Math.random()*720-360) + "deg");
+      p.style.animationDuration = 6 + Math.random()*5 + "s";
+      $("petals").appendChild(p);
+      setTimeout(() => p.remove(), 12000);
+    }, 700);
+  }
+
+  /* ---------- Навигация ---------- */
+  let cur = 0;
+  function go(n) {
+    $("s"+cur).classList.remove("active");
+    $("s"+n).classList.add("active");
+    cur = n;
+    $("noBtn").hidden = n !== 1;
+    if (n === 1) placeNo(true);
+  }
+
+  /* ---------- Вступление: подержать сердце ---------- */
+  tg(`👀 <b>${esc(CONFIG.name)}</b> открыла приглашение\n🕐 ${stamp()} · ${device()}`);
+
+  const HOLD = 1500, LEN = 440;
+  let holdStart = 0, raf = 0, done = false;
+  function tick(t) {
+    const k = Math.min((t - holdStart) / HOLD, 1);
+    $("prog").style.strokeDashoffset = LEN * (1 - k);
+    if (k >= 1) { done = true; release(); hearts($("heartBtn")); setTimeout(() => go(1), 500); return; }
+    raf = requestAnimationFrame(tick);
+  }
+  function press(e) {
+    if (done) return;
+    e.preventDefault();
+    $("heartBtn").classList.add("holding");
+    holdStart = performance.now(); raf = requestAnimationFrame(tick);
+  }
+  function release() {
+    cancelAnimationFrame(raf);
+    $("heartBtn").classList.remove("holding");
+    if (!done) $("prog").style.strokeDashoffset = LEN;
+  }
+  const hb = $("heartBtn");
+  hb.addEventListener("pointerdown", press);
+  ["pointerup","pointerleave","pointercancel"].forEach(ev => hb.addEventListener(ev, release));
+  hb.addEventListener("keydown", e => { if ((e.key === " " || e.key === "Enter") && !e.repeat) press(e); });
+  hb.addEventListener("keyup", release);
+  hb.addEventListener("contextmenu", e => e.preventDefault());
+
+  /* ---------- Экран 1: убегающая «Нет» ---------- */
+  const no = $("noBtn");
+  function placeNo(initial) {
+    requestAnimationFrame(() => {
+      const w = no.offsetWidth, h = no.offsetHeight, pad = 16;
+      if (initial) {
+        const y = $("yesBtn").getBoundingClientRect();
+        no.style.left = Math.min(innerWidth - w - pad, y.right + 40) + "px";
+        no.style.top = (y.top + 70) + "px";
+        return;
+      }
+      let x, yy, tries = 0;
+      const yesR = $("yesBtn").getBoundingClientRect();
+      do {
+        x = pad + Math.random() * (innerWidth - w - pad*2);
+        yy = pad + 40 + Math.random() * (innerHeight - h - pad*2 - 80);
+        tries++;
+      } while (tries < 20 && x < yesR.right + 10 && x + w > yesR.left - 10 && yy < yesR.bottom + 10 && yy + h > yesR.top - 10);
+      no.style.left = x + "px"; no.style.top = yy + "px";
+    });
+  }
+  function dodge(e) {
+    if (e) e.preventDefault();
+    st.noAttempts++;
+    placeNo(false);
+  }
+  no.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") dodge(); });
+  no.addEventListener("pointerdown", dodge);
+  no.addEventListener("click", dodge);
+  addEventListener("resize", () => { if (cur === 1) placeNo(true); });
+
+  $("yesBtn").addEventListener("click", e => {
+    hearts(e.currentTarget);
+    tg(`💖 <b>${esc(CONFIG.name)}</b> нажала «Да»!\nПопыток нажать «Нет»: ${st.noAttempts}`);
+    setTimeout(() => go(2), 700);
+  });
+
+  /* ---------- Экран 2 ---------- */
+  $("confirmBtn").addEventListener("click", e => { hearts(e.currentTarget); setTimeout(() => go(3), 500); });
+
+  /* ---------- Экран 3: дата и время ---------- */
+  const today = new Date();
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  $("dateIn").min = iso(today);
+  $("dateBtn").addEventListener("click", () => {
+    const d = $("dateIn").value, t = $("timeIn").value;
+    if (!d) { $("dateErr").textContent = "Выбери день 📅"; return; }
+    if (!t) { $("dateErr").textContent = "Выбери время 🕖"; return; }
+    $("dateErr").textContent = "";
+    const [Y, M, D] = d.split("-").map(Number);
+    st.date = d; st.time = t;
+    st.dateHuman = new Date(Y, M-1, D).toLocaleDateString("ru-RU", { weekday:"long", day:"numeric", month:"long" });
+    go(4);
+  });
+
+  /* ---------- Экран 4: активность ---------- */
+  CONFIG.activities.slice(0, 6).forEach(a => {
+    const b = document.createElement("button");
+    b.className = "act";
+    b.innerHTML = `<b aria-hidden="true">${a.emoji}</b>${esc(a.label)}`;
+    b.addEventListener("click", () => {
+      b.classList.add("picked");
+      st.activity = a.label;
+      showFinal();
+      setTimeout(() => go(5), 350);
+    });
+    $("acts").appendChild(b);
+  });
+
+  /* ---------- Финал ---------- */
+  function showFinal() {
+    $("finalText").textContent = CONFIG.finalText
+      .replaceAll("{date}", `«${st.dateHuman}»`)
+      .replaceAll("{time}", `«${st.time}»`)
+      .replaceAll("{activity}", st.activity)
+      .replaceAll("{name}", CONFIG.name);
+
+    if (CONFIG.secret) {
+      $("envelope").hidden = false;
+      $("secretText").textContent = CONFIG.secret;
+    }
+    if (CONFIG.photos.length) {
+      const al = $("album"); al.hidden = false; al.innerHTML = "";
+      CONFIG.photos.forEach(p => {
+        const f = document.createElement("figure");
+        f.innerHTML = `<img src="${esc(p.src)}" alt="${esc(p.caption||"")}" loading="lazy"><figcaption>${esc(p.caption||"")}</figcaption>`;
+        al.appendChild(f);
+      });
+    }
+    setTimeout(() => hearts(document.querySelector("#s5 h1")), 600);
+
+  }
+
+  const sendBtn = $("sendBtn");
+  sendBtn.textContent = `Отправить ${CONFIG.me} 💌`;
+  sendBtn.addEventListener("click", sendFinal);
+
+  function sendFinal() {
+    const s = $("status");
+    s.hidden = true;
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Отправляю…";
+    tg(
+`🎉 <b>${esc(CONFIG.name)} согласилась на свидание!</b>
+
+📅 Дата: <b>${esc(st.dateHuman)}</b> (${esc(st.date)})
+🕖 Время: <b>${esc(st.time)}</b>
+📍 Занятие: <b>${esc(st.activity)}</b>
+🙈 Попыток нажать «Нет»: ${st.noAttempts}
+
+🕐 Ответ получен ${stamp()} · ${device()}`
+    ).then(ok => {
+      if (ok) {
+        sendBtn.textContent = `✓ Отправлено ${CONFIG.me}`;
+        hearts(sendBtn);
+        return;
+      }
+      sendBtn.disabled = false;
+      sendBtn.textContent = "Отправить ещё раз 💌";
+      s.hidden = false;
+      s.textContent = "Не получилось отправить. Проверь интернет и нажми ещё раз.";
+    });
+  }
+
+  /* ---------- Кнопки финала ---------- */
+  $("contactBtn").href = CONFIG.contactLink;
+  $("contactBtn").textContent = CONFIG.contactText;
+  $("restartBtn").addEventListener("click", () => location.reload());
+  $("calBtn").addEventListener("click", () => {
+    const [h, m] = st.time.split(":").map(Number);
+    const start = st.date.replaceAll("-", "") + "T" + String(h).padStart(2,"0") + String(m).padStart(2,"0") + "00";
+    const endH = (h + 2) % 24;
+    const endDate = h + 2 >= 24
+      ? (() => { const [Y,M,D] = st.date.split("-").map(Number); return iso(new Date(Y, M-1, D+1)).replaceAll("-",""); })()
+      : st.date.replaceAll("-", "");
+    const end = endDate + "T" + String(endH).padStart(2,"0") + String(m).padStart(2,"0") + "00";
+    const ics = [
+      "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//invite//RU","BEGIN:VEVENT",
+      "UID:" + Date.now() + "@invite",
+      "DTSTAMP:" + new Date().toISOString().replace(/[-:]/g,"").split(".")[0] + "Z",
+      "DTSTART:" + start, "DTEND:" + end,
+      "SUMMARY:" + CONFIG.calendarTitle + " — " + st.activity,
+      "BEGIN:VALARM","TRIGGER:-PT2H","ACTION:DISPLAY","DESCRIPTION:Скоро свидание 💛","END:VALARM",
+      "END:VEVENT","END:VCALENDAR"
+    ].join("\r\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+    a.download = "svidanie.ics";
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  $("envelope").addEventListener("click", () => {
+    $("envelope").hidden = true;
+    $("secretText").style.display = "block";
+    tg(`💌 ${esc(CONFIG.name)} открыла секретный конверт`);
+  });
+
+  /* ---------- Взрыв сердец ---------- */
+  function hearts(el) {
+    if (reduce || !el) return;
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width/2, cy = r.top + r.height/2;
+    const set = ["💖","💗","💕","❤️","💘"];
+    for (let i = 0; i < 22; i++) {
+      const h = document.createElement("span");
+      h.className = "burst";
+      h.textContent = set[i % set.length];
+      h.style.left = cx + "px"; h.style.top = cy + "px";
+      const a = Math.random()*Math.PI*2, dist = 90 + Math.random()*160;
+      h.style.setProperty("--bx", Math.cos(a)*dist + "px");
+      h.style.setProperty("--by", Math.sin(a)*dist + "px");
+      document.body.appendChild(h);
+      setTimeout(() => h.remove(), 1300);
+    }
+  }
+})();
+</script>
+</body>
+</html>

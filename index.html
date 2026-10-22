@@ -36,7 +36,7 @@ const CONFIG = {
   confirmButton: "Да, да, ДА!",
 
   // --- Экран 3 ---
-  dateTitle:  "Когда тебе удобно? 📅",
+  dateTitle:  "Когда тебе удобно? только не октябрь))) 📅",
   dateButton: "Подтвердить 💫",
 
   // --- Экран 4 ---
@@ -49,23 +49,16 @@ const CONFIG = {
     { emoji: "☕", label: "Кофе" }
   ],
 
-  // --- Финал. {date}, {time}, {activity} подставятся сами ---
+  // --- Финал ---
   finalTitle: "Ура! Это свидание 💛",
-  finalText:  "Жду тебя {date} в {time}. Нас ждёт {activity} 💫",
 
   // Секретный конверт на финале (оставьте "" чтобы убрать)
   secret: "P.S. Ты не бойся ночииии ведь я ряяядооом)))…",
 
-  // Кнопки на финале
-  me: "Курбану",                       // кому отправляется ответ (в дательном падеже)
-  contactLink: "https://t.me/sahatmuradov",
-  contactText: "Написать Курбану 💬",
-  calendarTitle: "Свидание 💛",
-
-  // Фотоальбом «наши моменты»: ссылки на фото + подписи (можно оставить пустым [])
-  photos: [
-    // { src: "https://example.com/photo1.jpg", caption: "Наш первый вечер" }
-  ],
+  // --- Кнопка на финале: открывает ЛИЧКУ в Telegram с готовым сообщением ---
+  tgUsername: "sahatmuradov",          // ваш username в Telegram, без @
+  meName: "Курбан",                    // обращение в начале сообщения
+  sendText: "Отправить решение Курбану 💌",
 
   // Картинки экранов (анимированные эмодзи Noto, CC BY 4.0). Можно вставить свою ссылку на фото/GIF.
   img: {
@@ -330,16 +323,11 @@ const CONFIG = {
   <div class="inner">
     <div data-img="final"></div>
     <h1 id="finalTitle"></h1>
-    <p id="finalText"></p>
-    <div class="album" id="album" hidden></div>
     <button class="envelope" id="envelope" hidden>💌 Для тебя спрятан конверт — открой</button>
     <div class="secret-text" id="secretText"></div>
     <div class="final-actions">
-      <button class="btn send" id="sendBtn"></button>
+      <a class="btn send" id="sendBtn" href="#"></a>
       <div class="status" id="status" role="status" hidden></div>
-      <button class="btn ghost" id="calBtn">Добавить в календарь 📅</button>
-      <a class="btn ghost" id="contactBtn" target="_blank" rel="noopener"></a>
-      <button class="btn ghost" id="restartBtn">Пройти заново</button>
     </div>
   </div>
 </section>
@@ -526,85 +514,43 @@ const CONFIG = {
   });
 
   /* ---------- Финал ---------- */
-  function showFinal() {
-    $("finalText").textContent = CONFIG.finalText
-      .replaceAll("{date}", `«${st.dateHuman}»`)
-      .replaceAll("{time}", `«${st.time}»`)
-      .replaceAll("{activity}", st.activity)
-      .replaceAll("{name}", CONFIG.name);
+  /* ---------- Готовое сообщение для лички ---------- */
+  function buildMessage() {
+    return [
+      `${CONFIG.meName}, я согласна на свидание! 💛`,
+      ``,
+      `📅 Дата: ${st.dateHuman}`,
+      `🕖 Время: ${st.time}`,
+      `📍 Чем займёмся: ${st.activity}`,
+      `🙈 Попыток нажать «Нет»: ${st.noAttempts}`
+    ].join("\n");
+  }
+  function tgLink() {
+    const user = CONFIG.tgUsername.replace(/^@/, "").trim();
+    return `https://t.me/${user}?text=${encodeURIComponent(buildMessage())}`;
+  }
 
+  function showFinal() {
     if (CONFIG.secret) {
       $("envelope").hidden = false;
       $("secretText").textContent = CONFIG.secret;
     }
-    if (CONFIG.photos.length) {
-      const al = $("album"); al.hidden = false; al.innerHTML = "";
-      CONFIG.photos.forEach(p => {
-        const f = document.createElement("figure");
-        f.innerHTML = `<img src="${esc(p.src)}" alt="${esc(p.caption||"")}" loading="lazy"><figcaption>${esc(p.caption||"")}</figcaption>`;
-        al.appendChild(f);
-      });
-    }
+    $("sendBtn").href = tgLink();
     setTimeout(() => hearts(document.querySelector("#s5 h1")), 600);
-
   }
 
   const sendBtn = $("sendBtn");
-  sendBtn.textContent = `Отправить ${CONFIG.me} 💌`;
-  sendBtn.addEventListener("click", sendFinal);
-
-  function sendFinal() {
+  sendBtn.textContent = CONFIG.sendText;
+  sendBtn.addEventListener("click", () => {
+    const msg = buildMessage();
+    sendBtn.href = tgLink();
+    // Запасной вариант: текст в буфере обмена, если Telegram не вставит его сам
+    try { navigator.clipboard && navigator.clipboard.writeText(msg).catch(() => {}); } catch (e) {}
+    hearts(sendBtn);
     const s = $("status");
-    s.hidden = true;
-    sendBtn.disabled = true;
-    sendBtn.textContent = "Отправляю…";
-    tg(
-`🎉 <b>${esc(CONFIG.name)} согласилась на свидание!</b>
-
-📅 Дата: <b>${esc(st.dateHuman)}</b> (${esc(st.date)})
-🕖 Время: <b>${esc(st.time)}</b>
-📍 Занятие: <b>${esc(st.activity)}</b>
-🙈 Попыток нажать «Нет»: ${st.noAttempts}
-
-🕐 Ответ получен ${stamp()} · ${device()}`
-    ).then(ok => {
-      if (ok) {
-        sendBtn.textContent = `✓ Отправлено ${CONFIG.me}`;
-        hearts(sendBtn);
-        return;
-      }
-      sendBtn.disabled = false;
-      sendBtn.textContent = "Отправить ещё раз 💌";
-      s.hidden = false;
-      s.textContent = "Не получилось отправить. Проверь интернет и нажми ещё раз.";
-    });
-  }
-
-  /* ---------- Кнопки финала ---------- */
-  $("contactBtn").href = CONFIG.contactLink;
-  $("contactBtn").textContent = CONFIG.contactText;
-  $("restartBtn").addEventListener("click", () => location.reload());
-  $("calBtn").addEventListener("click", () => {
-    const [h, m] = st.time.split(":").map(Number);
-    const start = st.date.replaceAll("-", "") + "T" + String(h).padStart(2,"0") + String(m).padStart(2,"0") + "00";
-    const endH = (h + 2) % 24;
-    const endDate = h + 2 >= 24
-      ? (() => { const [Y,M,D] = st.date.split("-").map(Number); return iso(new Date(Y, M-1, D+1)).replaceAll("-",""); })()
-      : st.date.replaceAll("-", "");
-    const end = endDate + "T" + String(endH).padStart(2,"0") + String(m).padStart(2,"0") + "00";
-    const ics = [
-      "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//invite//RU","BEGIN:VEVENT",
-      "UID:" + Date.now() + "@invite",
-      "DTSTAMP:" + new Date().toISOString().replace(/[-:]/g,"").split(".")[0] + "Z",
-      "DTSTART:" + start, "DTEND:" + end,
-      "SUMMARY:" + CONFIG.calendarTitle + " — " + st.activity,
-      "BEGIN:VALARM","TRIGGER:-PT2H","ACTION:DISPLAY","DESCRIPTION:Скоро свидание 💛","END:VALARM",
-      "END:VEVENT","END:VCALENDAR"
-    ].join("\r\n");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
-    a.download = "svidanie.ics";
-    document.body.appendChild(a); a.click(); a.remove();
+    s.hidden = false;
+    s.textContent = "Открываю Telegram — останется нажать «Отправить» ✈️";
+    tg(`📨 ${esc(CONFIG.name)} нажала «${esc(CONFIG.sendText)}»`);
   });
 
   $("envelope").addEventListener("click", () => {
